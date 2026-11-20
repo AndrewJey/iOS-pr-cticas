@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>iOS Prácticas — HIG Interactive Playground</title>
+  <style>
+    :root { --bg:#f2f2f7; --card:#fff; --text:#1c1c1e; --muted:#636366; --border:#d1d1d6; --primary:#007aff; }
+    [data-theme="dark"] { --bg:#000; --card:#1c1c1e; --text:#f2f2f7; --muted:#8e8e93; --border:#38383a; --primary:#0a84ff; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:grid; place-items:center; padding:18px; }
+    .iphone { width:min(390px,100%); background:var(--card); border:9px solid #2c2c2e; border-radius:42px; padding:22px 18px; box-shadow:0 24px 60px rgba(0,0,0,.25); }
+    .notch { width:110px; height:22px; background:#000; border-radius:999px; margin:0 auto 14px; }
+    .bar { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+    input, button { font:inherit; padding:9px 12px; border-radius:12px; border:1px solid var(--border); background:var(--bg); color:var(--text); }
+    button { cursor:pointer; font-weight:600; }
+    .btn-primary { background:var(--primary); color:#fff; border-color:transparent; }
+    .row { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px 4px; border-bottom:1px solid var(--border); }
+    .done { text-decoration:line-through; color:var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="iphone">
+    <div class="notch" aria-hidden="true"></div>
+    <div class="bar">
+      <strong>🍎 iOS Prácticas</strong>
+      <button type="button" id="themeBtn">🌙</button>
+    </div>
+    <form id="form" style="display:flex;gap:8px;margin-bottom:12px;">
+      <input id="inp" style="flex:1;" placeholder="Nueva tarea SwiftUI..." required />
+      <button type="submit" class="btn-primary">+</button>
+    </form>
+    <div id="list"></div>
+  </div>
+  <script>
+    (function () {
+      var KEY = 'ios_practicas_tasks_v1', TKEY = 'ios_practicas_theme';
+      var tasks = [];
+      try { tasks = JSON.parse(localStorage.getItem(KEY) || 'null') || [{ id: '1', title: 'NavigationStack & List', done: true }, { id: '2', title: 'Persistencia UserDefaults / Codable', done: false }]; } catch (e) {}
+      function $(id) { return document.getElementById(id); }
+      function esc(v) { return String(v || '').replace(/[&<>"']/g, function (c) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); }
+      function save() { try { localStorage.setItem(KEY, JSON.stringify(tasks)); } catch (e) {} }
+      function setTheme(t) { document.documentElement.setAttribute('data-theme', t); try { localStorage.setItem(TKEY, t); } catch (e) {} $('themeBtn').textContent = t === 'dark' ? '☀️' : '🌙'; }
+      setTheme(localStorage.getItem(TKEY) === 'dark' ? 'dark' : 'light');
+      $('themeBtn').addEventListener('click', function () { setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); });
+      function render() {
+        $('list').innerHTML = tasks.length
+          ? tasks.map(function (t, i) { return '<div class="row"><label style="display:flex;gap:8px;align-items:center;cursor:pointer;"><input type="checkbox" data-tog="' + i + '"' + (t.done ? ' checked' : '') + ' /><span class="' + (t.done ? 'done' : '') + '">' + esc(t.title) + '</span></label><button type="button" data-del="' + i + '">✕</button></div>'; }).join('')
+          : '<div style="color:var(--muted);padding:12px 0;">Sin tareas registradas.</div>';
+      }
+      $('form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var v = $('inp').value.trim(); if (!v) return;
+        tasks.unshift({ id: String(Date.now()), title: v, done: false }); save(); $('inp').value = ''; render();
+      });
+      $('list').addEventListener('click', function (e) {
+        var tog = e.target.closest('[data-tog]');
+        if (tog) { var idx = Number(tog.getAttribute('data-tog')); tasks[idx].done = !tasks[idx].done; save(); render(); return; }
+        var del = e.target.closest('[data-del]');
+        if (del) { tasks.splice(Number(del.getAttribute('data-del')), 1); save(); render(); }
+      });
+      render();
+    })();
+  </script>
+</body>
+</html>
